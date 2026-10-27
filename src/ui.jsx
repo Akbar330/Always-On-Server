@@ -133,7 +133,7 @@ function BotDashboard() {
           <article className="metric-card">
             <div className="metric-label"><span className="metric-icon"><Icon name="activity" /></span> PLAYER</div>
             <div className="metric-value">{bot?.username || '—'}</div>
-            <div className="metric-sub">Akun bot</div>
+            <div className="metric-sub">Mode login: {bot?.type || data?.server?.type || '—'}</div>
           </article>
           <article className="metric-card">
             <div className="metric-label"><span className="metric-icon"><Icon name="refresh" /></span> RECONNECT</div>
@@ -156,7 +156,7 @@ function BotDashboard() {
           </article>
           <article className="info-card">
             <div className="section-title"><span className="metric-icon"><Icon name="activity" /></span><div><h3>Catatan</h3><p>Informasi deployment</p></div></div>
-            <p className="note-copy">Pengaturan koneksi dibaca dari <code>settings.json</code>. Runtime function bisa didaur ulang oleh platform; bot akan mencoba menyambung ulang ketika runtime aktif.</p>
+            <p className="note-copy">Mode login saat ini <strong>offline</strong>, sesuai nilai <code>type</code> di <code>settings.json</code>. Jika status <code>socketClosed</code> muncul, itu masalah koneksi server/runtime, bukan jenis autentikasi.</p>
             <a className="api-link" href="/api/status">Buka API status <Icon name="arrow" size={15} /></a>
           </article>
         </section>

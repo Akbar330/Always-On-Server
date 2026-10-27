@@ -1,5 +1,6 @@
 {
   "edition": "java",
+  "type": "offline",
   "host": "rewog.aternos.me",
   "port": 35524,
   "username": "REWOG.ID",

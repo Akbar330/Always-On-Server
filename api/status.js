@@ -27,6 +27,7 @@ module.exports = function statusHandler(req, res) {
       bot: botController.getStatus(),
       server: {
         edition: config.edition,
+        type: config.type,
         host: config.host,
         port: config.port
       },

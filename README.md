@@ -26,6 +26,7 @@ Contoh `settings.json` Aternos (ganti alamat, nama, dan port sesuai panel Anda):
 ```json
 {
   "edition": "java",
+  "type": "offline",
   "host": "alamat-server-anda.aternos.me",
   "port": null,
   "username": "AntiAfkBot",
@@ -36,7 +37,7 @@ Contoh `settings.json` Aternos (ganti alamat, nama, dan port sesuai panel Anda):
 
 Port default Java adalah `25565`, sedangkan Bedrock `19132`. Isi `port` bila server memakai port lain; gunakan `null` untuk port default. `version` opsional; string kosong membiarkan library memilih versi.
 
-Bot menggunakan autentikasi offline. Server yang mewajibkan autentikasi Microsoft/Xbox Live tidak didukung oleh konfigurasi ini. Ikuti aturan Aternos dan server Anda; bot tidak menjamin server tetap online atau bahwa kebijakan AFK server dapat dilewati.
+`type` dikunci ke `"offline"` dan dipakai sebagai mode autentikasi Mineflayer. Server yang mewajibkan autentikasi Microsoft/Xbox Live tidak didukung oleh konfigurasi ini. Ikuti aturan Aternos dan server Anda; bot tidak menjamin server tetap online atau bahwa kebijakan AFK server dapat dilewati.
 
 ## UI React dan deployment ke Vercel
 

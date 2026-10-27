@@ -22,6 +22,7 @@ function createJavaBot(config) {
   const state = {
     status: 'starting',
     username: config.username,
+    type: config.type,
     reconnectAttempts: 0,
     connectedAt: null,
     lastActivityAt: null,
@@ -82,7 +83,7 @@ function createJavaBot(config) {
         host: config.host,
         port: config.port,
         username: config.username,
-        auth: 'offline',
+        auth: config.type,
         ...(config.version ? { version: config.version } : {})
       })
     } catch (error) {

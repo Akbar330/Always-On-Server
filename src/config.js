@@ -36,6 +36,11 @@ function readConfig() {
     throw new Error('username wajib diisi di settings.json.')
   }
 
+  const type = String(settings.type || 'offline').trim().toLowerCase()
+  if (type !== 'offline') {
+    throw new Error('type di settings.json saat ini hanya mendukung "offline".')
+  }
+
   const host = String(settings.host || '').trim()
   if (!host) {
     throw new Error('host wajib diisi di settings.json.')
@@ -58,6 +63,7 @@ function readConfig() {
 
   return {
     edition,
+    type,
     host,
     port,
     username,
