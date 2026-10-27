@@ -202,8 +202,8 @@ function BotDashboard() {
       <div className="access-screen">
         <form className="access-card" onSubmit={unlockDashboard}>
           <span className="brand-mark"><Icon name="terminal" size={21} /></span>
-          <div className="eyebrow">DASHBOARD ACCESS</div>
-          <h1>Masukkan token dashboard</h1>
+          <div className="eyebrow">AKSES DASHBOARD</div>
+          <h1>Masuk ke dashboard</h1>
           <p>Atur <code>DASHBOARD_TOKEN</code> minimal 32 karakter di Vercel Environment Variables. Token ini melindungi log dan kontrol chat bot.</p>
           <input
             autoComplete="current-password"
@@ -213,7 +213,7 @@ function BotDashboard() {
             type="password"
             value={tokenDraft}
           />
-          <button className="send-button" type="submit">Buka dashboard <Icon name="arrow" size={15} /></button>
+          <button className="send-button" type="submit">Lanjutkan <Icon name="arrow" size={15} /></button>
         </form>
       </div>
     )
@@ -224,9 +224,9 @@ function BotDashboard() {
       <aside className="sidebar">
         <a className="brand" href="/" aria-label="AFK Bot dashboard">
           <span className="brand-mark"><Icon name="activity" size={21} /></span>
-          <span>BLOCK<span className="brand-light">KEEP</span></span>
+          <span>SERVER<span className="brand-light">PANEL</span></span>
         </a>
-        <div className="side-label">WORKSPACE</div>
+        <div className="side-label">MENU</div>
         <a className="nav-item active" href="#overview"><Icon name="grid" /> Overview</a>
         <a className="nav-item" href="#connection"><Icon name="server" /> Koneksi</a>
         <a className="nav-item" href="#players"><Icon name="users" /> Pemain</a>
@@ -241,33 +241,27 @@ function BotDashboard() {
       <main className="main-content" id="overview">
         <header className="topbar">
           <div className="breadcrumb">Workspace <span>/</span> Overview</div>
-          <div className="top-actions"><div className="top-meta"><span className="live-dot" /> LIVE STATUS</div><button className="lock-button" onClick={lockDashboard} type="button">Kunci dashboard</button></div>
+          <div className="top-actions">          <div className="top-meta"><span className="live-dot" /> STATUS LANGSUNG</div><button className="lock-button" onClick={lockDashboard} type="button">Keluar</button></div>
         </header>
 
         <section className="page-heading">
           <div>
-            <div className="eyebrow">MINECRAFT SERVER MONITOR</div>
-            <h1>Bot Control Center</h1>
-            <p>Pantau koneksi bot dan aktivitas server kamu.</p>
+            <div className="eyebrow">RINGKASAN SERVER</div>
+            <h1>Panel server</h1>
+            <p>Status koneksi, pemain, dan bot Minecraft.</p>
           </div>
           <div className="updated-chip"><Icon name="clock" size={15} /> Update {formatTime(checkedAt)}</div>
         </section>
 
         <section className={`hero-card ${isOnline ? 'is-online' : ''}`}>
-          <div className="hero-glow" />
           <div className="hero-copy">
             <div className="status-pill"><span className={`pulse ${isOnline ? 'green' : ''}`} />{label.toUpperCase()}</div>
-            <h2>{isOnline ? 'Bot siap menjaga server.' : 'Menunggu koneksi bot.'}</h2>
+            <h2>{isOnline ? 'Bot terhubung' : 'Bot belum terhubung'}</h2>
             <p>{error || bot?.lastError || 'Dashboard melakukan pemeriksaan status secara berkala.'}</p>
           </div>
-          <div className="hero-orb" aria-hidden="true">
-            <div className="orb-ring ring-one" />
-            <div className="orb-ring ring-two" />
-            <div className="orb-core"><Icon name="activity" size={34} /></div>
-          </div>
           <div className="hero-footer">
-            <span><span className={`pulse ${isOnline ? 'green' : ''}`} /> AUTO-RECONNECT AKTIF</span>
-            <span>Refresh otomatis · 5 detik</span>
+            <span><span className={`pulse ${isOnline ? 'green' : ''}`} /> SAMBUNG ULANG OTOMATIS</span>
+            <span>Pembaruan setiap 5 detik</span>
           </div>
         </section>
 
@@ -391,7 +385,7 @@ function BotDashboard() {
           {data?.server?.consoleCommandsEnabled && <div className="console-hint">Command diawali <code>/</code> akan dikirim ke chat Minecraft menggunakan izin akun bot.</div>}
         </section>
 
-        <footer className="footer"><span>BLOCKKEEP <span className="footer-sep">/</span> AFK MONITOR</span><span>Built for your Minecraft world</span></footer>
+        <footer className="footer"><span>SERVER PANEL <span className="footer-sep">/</span> MINECRAFT</span><span>Waktu server mengikuti runtime</span></footer>
       </main>
     </div>
   )
