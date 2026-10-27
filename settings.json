@@ -1,9 +1,25 @@
 {
-  "edition": "java",
-  "type": "offline",
-  "host": "rewog.aternos.me",
-  "port": 35524,
-  "username": "REWOG.ID",
-  "version": "",
-  "intervalSeconds": 300
+  "name": "REWOG.ID AFK BOT",
+  "bot-account": {
+    "username": "REWOG.ID",
+    "password": "",
+    "type": "offline"
+  },
+  "server": {
+    "edition": "java",
+    "ip": "rewog.aternos.me",
+    "port": 35524,
+    "version": "1.20.4"
+  },
+  "utils": {
+    "anti-afk": {
+      "enabled": true,
+      "sneak": true,
+      "intervalSeconds": 300
+    }
+  },
+  "modules": {
+    "chat": true,
+    "console-commands": true
+  }
 }

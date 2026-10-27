@@ -7,7 +7,7 @@ Bot Minecraft berbasis Node.js dengan konfigurasi `settings.json`, aksi anti-AFK
 1. Pasang Node.js 20 atau lebih baru.
 2. Dari folder proyek, jalankan `npm install`.
 3. Edit `settings.json`: isi alamat server dan nama bot.
-4. Untuk instalasi standar atau Vercel, gunakan `"edition": "java"`.
+4. Untuk instalasi standar atau Vercel, gunakan `"server": { "edition": "java" }`.
 5. Jalankan `npm start`.
 
 Build standar memasang dependency untuk Java Edition. Dependency Bedrock tidak dipasang otomatis karena `bedrock-protocol` membawa `raknet-native`, yang membutuhkan native build tools dan gagal pada build Vercel. Untuk Bedrock, install `bedrock-protocol` secara manual hanya di lingkungan lokal yang sudah memiliki persyaratan native build; Bedrock tidak tersedia pada deployment Vercel ini.
@@ -25,19 +25,35 @@ Contoh `settings.json` Aternos (ganti alamat, nama, dan port sesuai panel Anda):
 
 ```json
 {
-  "edition": "java",
-  "type": "offline",
-  "host": "alamat-server-anda.aternos.me",
-  "port": null,
-  "username": "AntiAfkBot",
-  "version": "",
-  "intervalSeconds": 300
+  "name": "Minecraft AFK BOT",
+  "bot-account": {
+    "username": "AntiAfkBot",
+    "password": "",
+    "type": "offline"
+  },
+  "server": {
+    "edition": "java",
+    "ip": "alamat-server-anda.aternos.me",
+    "port": 25565,
+    "version": "1.20.4"
+  },
+  "utils": {
+    "anti-afk": {
+      "enabled": true,
+      "sneak": true,
+      "intervalSeconds": 300
+    }
+  },
+  "modules": {
+    "chat": true,
+    "console-commands": true
+  }
 }
 ```
 
-Port default Java adalah `25565`, sedangkan Bedrock `19132`. Isi `port` bila server memakai port lain; gunakan `null` untuk port default. `version` opsional; string kosong membiarkan library memilih versi.
+Port default Java adalah `25565`, sedangkan Bedrock `19132`. Isi `server.port` sesuai nilai di panel Aternos dan ubah `server.version` bila diperlukan.
 
-`type` dikunci ke `"offline"` dan dipakai sebagai mode autentikasi Mineflayer. Server yang mewajibkan autentikasi Microsoft/Xbox Live tidak didukung oleh konfigurasi ini. Ikuti aturan Aternos dan server Anda; bot tidak menjamin server tetap online atau bahwa kebijakan AFK server dapat dilewati.
+`bot-account.type` dikunci ke `"offline"` dan dipakai sebagai mode autentikasi Mineflayer. Server yang mewajibkan autentikasi Microsoft/Xbox Live tidak didukung oleh konfigurasi ini. Ikuti aturan Aternos dan server Anda; bot tidak menjamin server tetap online atau bahwa kebijakan AFK server dapat dilewati.
 
 ## UI React dan deployment ke Vercel
 
@@ -47,6 +63,10 @@ UI dibuat dengan React + Vite. Jalankan `npm install` lalu `npm run dev` untuk d
 2. Import repository ke Vercel. `vercel.json` mengatur build React dengan Vite, output ke `dist/`, dan menyertakan `settings.json` ke function status.
 3. Buka URL deployment. Dashboard React meminta `GET /api/status`; endpoint menginisialisasi Mineflayer pada runtime function dan mengembalikan status koneksi bot.
 4. Lihat Vercel Runtime Logs jika status tidak berubah ke `Online`.
+
+Untuk memakai dashboard, tambahkan environment variable `DASHBOARD_TOKEN` di pengaturan project Vercel (gunakan token acak minimal 32 karakter), lalu redeploy. Saat membuka UI, masukkan token tersebut. Token hanya disimpan di `sessionStorage` tab browser dan tidak dimasukkan ke `settings.json`. API menolak token yang lebih pendek.
+
+Bagian **Minecraft Console** mengirim teks ke chat sebagai akun bot; input yang diawali `/` meneruskan perintah chat Minecraft jika `modules.console-commands` aktif. Ini bukan shell OS dan tidak menjalankan command pada sistem Vercel. Log koneksi, error, aktivitas anti-AFK, serta chat server masuk akan terlihat di panel log. Log disimpan sementara di memori runtime; runtime Vercel yang berbeda dapat memiliki riwayat berbeda.
 
 Vercel dapat mendaur ulang function instance atau membuat instance baru. Status dalam dashboard mencerminkan instance yang sedang melayani request, bukan jaminan proses tunggal selalu hidup tanpa putus; setelah cold start/deploy, bot akan dimulai lagi ketika endpoint status dipanggil. Dashboard melakukan polling berkala agar status tetap diperbarui. Jika deployment Anda tidak mempertahankan sesi seperti yang diharapkan, jalankan bot sebagai worker persisten atau gunakan konfigurasi runtime lain yang telah Anda verifikasi.
 

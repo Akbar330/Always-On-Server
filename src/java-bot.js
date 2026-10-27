@@ -1,6 +1,7 @@
 'use strict'
 
 const mineflayer = require('mineflayer')
+const { addLog } = require('./log-store')
 
 const MIN_RECONNECT_DELAY_MS = 3000
 const MAX_RECONNECT_DELAY_MS = 60000
@@ -53,6 +54,7 @@ function createJavaBot(config) {
       MAX_RECONNECT_DELAY_MS
     )
     state.status = 'reconnecting'
+    addLog('warn', 'bot', `Koneksi terputus. Mencoba lagi dalam ${Math.round(delay / 1000)} detik.`)
     reconnectTimer = setTimeout(() => {
       reconnectTimer = undefined
       connect()
@@ -66,18 +68,22 @@ function createJavaBot(config) {
     bot.look(yaw, 0, true).catch((error) => {
       state.lastError = `Look gagal: ${error.message}`
     })
-    bot.setControlState('sneak', true)
-    clearTimeout(releaseSneakTimer)
-    releaseSneakTimer = setTimeout(() => {
-      if (bot?.entity) bot.setControlState('sneak', false)
-    }, SNEAK_DURATION_MS)
+    if (config.sneakEnabled) {
+      bot.setControlState('sneak', true)
+      clearTimeout(releaseSneakTimer)
+      releaseSneakTimer = setTimeout(() => {
+        if (bot?.entity) bot.setControlState('sneak', false)
+      }, SNEAK_DURATION_MS)
+    }
     state.lastActivityAt = new Date().toISOString()
+    addLog('info', 'anti-afk', 'Aktivitas anti-AFK dikirim.')
   }
 
   function connect() {
     if (stopped) return
 
     state.status = 'connecting'
+    addLog('info', 'bot', `Menghubungkan ke ${config.host}:${config.port} sebagai ${config.username}.`)
     try {
       bot = mineflayer.createBot({
         host: config.host,
@@ -94,6 +100,7 @@ function createJavaBot(config) {
 
     bot.on('login', () => {
       state.status = 'joining'
+      addLog('info', 'bot', `Login berhasil ke ${config.host}:${config.port}.`)
       console.log(`Bot login ke ${config.host}:${config.port}.`)
     })
 
@@ -102,7 +109,8 @@ function createJavaBot(config) {
       state.connectedAt = new Date().toISOString()
       state.reconnectAttempts = 0
       state.lastError = null
-      if (!activityTimer) {
+      addLog('info', 'bot', 'Bot masuk ke dunia.')
+      if (config.antiAfkEnabled && !activityTimer) {
         activityTimer = setInterval(doActivity, config.intervalMs)
       }
       console.log(`Bot spawn; aktivitas tiap ${config.intervalMs / 1000} detik.`)
@@ -110,18 +118,25 @@ function createJavaBot(config) {
 
     bot.on('kicked', (reason) => {
       state.lastError = describeReason(reason) || 'Kicked oleh server'
+      addLog('error', 'bot', `Dikeluarkan server: ${state.lastError}`)
       console.error('Bot dikeluarkan server:', state.lastError)
     })
 
     bot.on('error', (error) => {
       state.lastError = error.message
+      addLog('error', 'bot', error.message)
       console.error('Kesalahan bot Java:', error.message)
+    })
+
+    bot.on('message', (message) => {
+      addLog('chat', 'server', message.toString())
     })
 
     bot.on('end', (reason) => {
       clearActivityTimers()
       state.status = 'disconnected'
       if (reason) state.lastError = describeReason(reason)
+      addLog('warn', 'bot', `Koneksi berakhir${state.lastError ? `: ${state.lastError}` : '.'}`)
       scheduleReconnect()
     })
   }
@@ -131,6 +146,28 @@ function createJavaBot(config) {
   return {
     getStatus() {
       return { ...state }
+    },
+    sendChat(message) {
+      if (!config.chatEnabled) {
+        throw new Error('Pengiriman chat dinonaktifkan di settings.json.')
+      }
+      if (!bot?.entity || state.status !== 'online') {
+        throw new Error('Bot belum online; pesan tidak dikirim.')
+      }
+
+      const text = String(message).trim()
+      if (!text || text.length > 256) {
+        throw new Error('Pesan wajib diisi dan maksimal 256 karakter.')
+      }
+      if (/[\u0000-\u001f\u007f]/.test(text)) {
+        throw new Error('Pesan hanya boleh berisi satu baris teks.')
+      }
+      if (text.startsWith('/') && !config.consoleCommandsEnabled) {
+        throw new Error('Perintah chat dinonaktifkan di settings.json.')
+      }
+
+      bot.chat(text)
+      addLog('outgoing', 'kamu', text)
     },
     stop() {
       stopped = true

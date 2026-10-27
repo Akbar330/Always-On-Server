@@ -26,37 +26,43 @@ function readConfig() {
     throw new Error('settings.json harus berisi object JSON.')
   }
 
-  const edition = String(settings.edition || 'java').trim().toLowerCase()
+  const account = settings['bot-account'] || settings
+  const server = settings.server || settings
+  const modules = settings.modules || {}
+  const antiAfk = settings.utils?.['anti-afk'] || {}
+
+  const edition = String(server.edition || settings.edition || 'java').trim().toLowerCase()
   if (!['java', 'bedrock'].includes(edition)) {
     throw new Error('edition di settings.json harus "java" atau "bedrock".')
   }
 
-  const username = String(settings.username || '').trim()
+  const username = String(account.username || '').trim()
   if (!username) {
     throw new Error('username wajib diisi di settings.json.')
   }
 
-  const type = String(settings.type || 'offline').trim().toLowerCase()
+  const type = String(account.type || 'offline').trim().toLowerCase()
   if (type !== 'offline') {
     throw new Error('type di settings.json saat ini hanya mendukung "offline".')
   }
 
-  const host = String(settings.host || '').trim()
+  const host = String(server.ip || server.host || '').trim()
   if (!host) {
     throw new Error('host wajib diisi di settings.json.')
   }
 
   const defaultPort = edition === 'java' ? 25565 : 19132
-  const port = settings.port === undefined || settings.port === null || settings.port === ''
+  const portValue = server.port
+  const port = portValue === undefined || portValue === null || portValue === ''
     ? defaultPort
-    : Number(settings.port)
+    : Number(portValue)
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error('port di settings.json harus berupa angka antara 1 dan 65535.')
   }
 
-  const intervalSeconds = settings.intervalSeconds === undefined
+  const intervalSeconds = antiAfk.intervalSeconds === undefined && antiAfk.interval === undefined && settings.intervalSeconds === undefined
     ? DEFAULT_INTERVAL_SECONDS
-    : Number(settings.intervalSeconds)
+    : Number(antiAfk.intervalSeconds ?? antiAfk.interval ?? settings.intervalSeconds)
   if (!Number.isFinite(intervalSeconds) || intervalSeconds < MIN_INTERVAL_SECONDS) {
     throw new Error(`intervalSeconds di settings.json harus minimal ${MIN_INTERVAL_SECONDS}.`)
   }
@@ -67,8 +73,12 @@ function readConfig() {
     host,
     port,
     username,
-    version: String(settings.version || '').trim() || undefined,
-    intervalMs: intervalSeconds * 1000
+    version: String(server.version || settings.version || '').trim() || undefined,
+    intervalMs: intervalSeconds * 1000,
+    antiAfkEnabled: antiAfk.enabled !== false,
+    sneakEnabled: antiAfk.sneak === true,
+    chatEnabled: modules.chat === true,
+    consoleCommandsEnabled: modules['console-commands'] === true
   }
 }
 
