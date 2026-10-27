@@ -67,6 +67,7 @@ function createJavaBot(config) {
     yaw = (yaw + Math.PI / 6) % (Math.PI * 2)
     bot.look(yaw, 0, true).catch((error) => {
       state.lastError = `Look gagal: ${error.message}`
+      addLog('error', config.username, `Gerak kamera gagal: ${error.message}`)
     })
     if (config.sneakEnabled) {
       bot.setControlState('sneak', true)
@@ -76,14 +77,14 @@ function createJavaBot(config) {
       }, SNEAK_DURATION_MS)
     }
     state.lastActivityAt = new Date().toISOString()
-    addLog('info', 'anti-afk', 'Aktivitas anti-AFK dikirim.')
+    addLog('info', config.username, 'Aktivitas anti-AFK dikirim.')
   }
 
   function connect() {
     if (stopped) return
 
     state.status = 'connecting'
-    addLog('info', 'bot', `Menghubungkan ke ${config.host}:${config.port} sebagai ${config.username}.`)
+    addLog('info', config.username, `Menghubungkan ke ${config.host}:${config.port}.`)
     try {
       bot = mineflayer.createBot({
         host: config.host,
@@ -100,7 +101,7 @@ function createJavaBot(config) {
 
     bot.on('login', () => {
       state.status = 'joining'
-      addLog('info', 'bot', `Login berhasil ke ${config.host}:${config.port}.`)
+      addLog('info', config.username, `Login berhasil ke ${config.host}:${config.port}.`)
       console.log(`Bot login ke ${config.host}:${config.port}.`)
     })
 
@@ -109,7 +110,7 @@ function createJavaBot(config) {
       state.connectedAt = new Date().toISOString()
       state.reconnectAttempts = 0
       state.lastError = null
-      addLog('info', 'bot', 'Bot masuk ke dunia.')
+      addLog('info', config.username, 'Bot masuk ke dunia.')
       if (config.antiAfkEnabled && !activityTimer) {
         activityTimer = setInterval(doActivity, config.intervalMs)
       }
@@ -118,13 +119,13 @@ function createJavaBot(config) {
 
     bot.on('kicked', (reason) => {
       state.lastError = describeReason(reason) || 'Kicked oleh server'
-      addLog('error', 'bot', `Dikeluarkan server: ${state.lastError}`)
+      addLog('error', config.username, `Dikeluarkan server: ${state.lastError}`)
       console.error('Bot dikeluarkan server:', state.lastError)
     })
 
     bot.on('error', (error) => {
       state.lastError = error.message
-      addLog('error', 'bot', error.message)
+      addLog('error', config.username, error.message)
       console.error('Kesalahan bot Java:', error.message)
     })
 
@@ -132,11 +133,19 @@ function createJavaBot(config) {
       addLog('chat', 'server', message.toString())
     })
 
+    bot.on('playerJoined', (player) => {
+      addLog('info', 'server', `${player.username} masuk ke server.`)
+    })
+
+    bot.on('playerLeft', (player) => {
+      addLog('info', 'server', `${player.username} keluar dari server.`)
+    })
+
     bot.on('end', (reason) => {
       clearActivityTimers()
       state.status = 'disconnected'
       if (reason) state.lastError = describeReason(reason)
-      addLog('warn', 'bot', `Koneksi berakhir${state.lastError ? `: ${state.lastError}` : '.'}`)
+      addLog('warn', config.username, `Koneksi berakhir${state.lastError ? `: ${state.lastError}` : '.'}`)
       scheduleReconnect()
     })
   }
@@ -146,6 +155,22 @@ function createJavaBot(config) {
   return {
     getStatus() {
       return { ...state }
+    },
+    getPlayers() {
+      if (!bot?.players) return []
+      return Object.values(bot.players).map((player) => ({
+        username: player.username,
+        uuid: player.uuid || null,
+        ping: Number.isFinite(player.ping) ? player.ping : null,
+        gamemode: Number.isFinite(player.gamemode) ? player.gamemode : null,
+        position: player.entity?.position
+          ? {
+              x: Math.floor(player.entity.position.x),
+              y: Math.floor(player.entity.position.y),
+              z: Math.floor(player.entity.position.z)
+            }
+          : null
+      })).filter((player) => typeof player.username === 'string' && player.username.length > 0)
     },
     sendChat(message) {
       if (!config.chatEnabled) {
@@ -167,7 +192,7 @@ function createJavaBot(config) {
       }
 
       bot.chat(text)
-      addLog('outgoing', 'kamu', text)
+      addLog('outgoing', config.username, text)
     },
     stop() {
       stopped = true

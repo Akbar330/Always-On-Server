@@ -2,10 +2,10 @@
 
 const crypto = require('node:crypto')
 const { readConfig } = require('../src/config')
-const { createJavaBot } = require('../src/java-bot')
+const { createBotManager } = require('../src/bot-manager')
 const { addLog, getLogs, instanceId } = require('../src/log-store')
 
-let botController
+let botManager
 let lastChatSentAt = 0
 
 function json(res, status, body) {
@@ -39,11 +39,11 @@ function readBody(req) {
 function ensureRuntime() {
   const config = readConfig()
   if (config.edition !== 'java') {
-    throw new Error('Shell dashboard saat ini hanya mendukung Minecraft Java Edition.')
+    throw new Error('Dashboard saat ini hanya mendukung Minecraft Java Edition.')
   }
 
-  if (!botController) {
-    botController = createJavaBot(config)
+  if (!botManager) {
+    botManager = createBotManager(config)
     addLog('info', 'system', `Runtime dimulai untuk ${config.host}:${config.port}.`)
   }
 
@@ -64,10 +64,16 @@ module.exports = function apiHandler(req, res) {
   const pathname = new URL(req.url, 'http://localhost').pathname
   const route = pathname.split('/').filter(Boolean).at(-1)
   const allowedMethod = { status: 'GET', logs: 'GET', chat: 'POST' }[route]
+  const allowedBotMethods = ['GET', 'POST', 'DELETE']
 
-  if (!allowedMethod) return json(res, 404, { error: 'Route API tidak ditemukan.' })
-  if (req.method !== allowedMethod) {
-    res.setHeader('Allow', allowedMethod)
+  if (!allowedMethod && route !== 'bots') {
+    return json(res, 404, { error: 'Route API tidak ditemukan.' })
+  }
+  if (
+    (allowedMethod && req.method !== allowedMethod) ||
+    (route === 'bots' && !allowedBotMethods.includes(req.method))
+  ) {
+    res.setHeader('Allow', allowedMethod || allowedBotMethods.join(', '))
     return json(res, 405, { error: 'Method not allowed.' })
   }
 
@@ -78,7 +84,10 @@ module.exports = function apiHandler(req, res) {
       return json(res, 200, {
         api: 'online',
         instanceId,
-        bot: botController.getStatus(),
+        bot: botManager.listBots()[0],
+        bots: botManager.listBots(),
+        players: botManager.getPlayers(),
+        maxBots: botManager.getMaxBots(),
         server: {
           edition: config.edition,
           type: config.type,
@@ -97,6 +106,33 @@ module.exports = function apiHandler(req, res) {
         return json(res, 400, { error: 'Parameter after tidak valid.' })
       }
       return json(res, 200, { instanceId, logs: getLogs(afterId) })
+    }
+
+    if (route === 'bots') {
+      if (req.method === 'GET') {
+        return json(res, 200, {
+          instanceId,
+          bots: botManager.listBots(),
+          maxBots: botManager.getMaxBots()
+        })
+      }
+
+      let body
+      try {
+        body = readBody(req)
+      } catch {
+        return json(res, 400, { error: 'Body request harus JSON yang valid.' })
+      }
+
+      if (req.method === 'POST') {
+        const bots = botManager.addBot(body.username)
+        addLog('info', 'system', `Bot tambahan ${String(body.username).trim()} diminta.`)
+        return json(res, 201, { bots, maxBots: botManager.getMaxBots() })
+      }
+
+      const bots = botManager.removeBot(body.username)
+      addLog('warn', 'system', `Bot ${String(body.username || '').trim()} dihapus.`)
+      return json(res, 200, { bots, maxBots: botManager.getMaxBots() })
     }
 
     if (route === 'chat') {
@@ -123,7 +159,7 @@ module.exports = function apiHandler(req, res) {
         return json(res, 403, { error: 'Perintah chat dinonaktifkan di settings.json.' })
       }
 
-      botController.sendChat(body.message)
+      botManager.sendChat(body.message)
       lastChatSentAt = now
       return json(res, 200, { sent: true })
     }

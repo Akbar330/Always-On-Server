@@ -21,7 +21,10 @@ function Icon({ name, size = 18 }) {
     refresh: <><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2" /></>,
     arrow: <><path d="M7 17 17 7M7 7h10v10" /></>,
     send: <><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></>,
-    terminal: <><path d="m4 17 6-5-6-5M12 19h8" /></>
+    terminal: <><path d="m4 17 6-5-6-5M12 19h8" /></>,
+    users: <><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8v6M23 11h-6" /></>,
+    plus: <><path d="M12 5v14M5 12h14" /></>,
+    trash: <><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5" /></>
   }
 
   return (
@@ -49,6 +52,9 @@ function BotDashboard() {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [chatError, setChatError] = useState('')
+  const [botUsername, setBotUsername] = useState('')
+  const [botActionError, setBotActionError] = useState('')
+  const [botActionBusy, setBotActionBusy] = useState(false)
   const logsRef = useRef(null)
   const logCursor = useRef(0)
   const logInstance = useRef(null)
@@ -155,6 +161,35 @@ function BotDashboard() {
     }
   }
 
+  async function manageBot(method, username) {
+    setBotActionBusy(true)
+    setBotActionError('')
+    try {
+      const response = await fetch('/api/bots', {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        ...(username ? { body: JSON.stringify({ username }) } : {})
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`)
+      setBotUsername('')
+      setData((previous) => previous ? { ...previous, bots: result.bots, maxBots: result.maxBots } : previous)
+    } catch (requestError) {
+      setBotActionError(requestError.message)
+    } finally {
+      setBotActionBusy(false)
+    }
+  }
+
+  function addBot(event) {
+    event.preventDefault()
+    if (!botUsername.trim() || botActionBusy) return
+    manageBot('POST', botUsername.trim())
+  }
+
   const bot = data?.bot
   const isOnline = bot?.status === 'online'
   const label = error ? 'Tidak terhubung' : (STATUS_LABELS[bot?.status] || 'Memeriksa status')
@@ -194,6 +229,8 @@ function BotDashboard() {
         <div className="side-label">WORKSPACE</div>
         <a className="nav-item active" href="#overview"><Icon name="grid" /> Overview</a>
         <a className="nav-item" href="#connection"><Icon name="server" /> Koneksi</a>
+        <a className="nav-item" href="#players"><Icon name="users" /> Pemain</a>
+        <a className="nav-item" href="#bots"><Icon name="server" /> Bot</a>
         <a className="nav-item" href="#console"><Icon name="terminal" /> Console</a>
         <div className="sidebar-bottom">
           <div className="mini-status"><span className={`pulse ${isOnline ? 'green' : ''}`} />{label}</div>
@@ -254,6 +291,57 @@ function BotDashboard() {
             <div className="metric-label"><span className="metric-icon"><Icon name="clock" /></span> LAST ACTIVITY</div>
             <div className="metric-value">{formatTime(bot?.lastActivityAt)}</div>
             <div className="metric-sub">Aktivitas anti-AFK terakhir</div>
+          </article>
+        </section>
+
+        <section className="people-grid" id="players">
+          <article className="info-card players-card">
+            <div className="section-title">
+              <span className="metric-icon"><Icon name="users" /></span>
+              <div><h3>Pemain di server</h3><p>Daftar berdasarkan tab list yang diterima bot</p></div>
+              <span className="section-count">{data?.players?.length ?? 0}</span>
+            </div>
+            <div className="people-list">
+              {data?.players?.length ? data.players.map((player) => (
+                <div className="person-row" key={player.uuid || player.username}>
+                  <span className={`avatar ${player.isBot ? 'bot-avatar' : ''}`}>{player.username.slice(0, 1).toUpperCase()}</span>
+                  <div className="person-name">{player.username}<span>{player.isBot ? 'BOT' : 'PLAYER'}</span></div>
+                  <span className={`person-state ${player.isBot ? 'bot-state' : ''}`}>{player.isBot ? 'BOT' : 'ONLINE'}</span>
+                </div>
+              )) : <div className="empty-people">{isOnline ? 'Belum ada data pemain dari server.' : 'Daftar pemain tersedia setelah bot tersambung.'}</div>}
+            </div>
+          </article>
+
+          <article className="info-card bots-card" id="bots">
+            <div className="section-title">
+              <span className="metric-icon"><Icon name="server" /></span>
+              <div><h3>Bot aktif</h3><p>Maksimal {data?.maxBots || 3} bot di runtime ini</p></div>
+              <span className="section-count">{data?.bots?.length || 0}/{data?.maxBots || 3}</span>
+            </div>
+            <div className="bot-list">
+              {(data?.bots || []).map((managedBot) => (
+                <div className="person-row" key={managedBot.username}>
+                  <span className={`avatar ${managedBot.status === 'online' ? 'bot-avatar' : ''}`}>{managedBot.username.slice(0, 1).toUpperCase()}</span>
+                  <div className="person-name">{managedBot.username}<span>{STATUS_LABELS[managedBot.status] || managedBot.status}</span></div>
+                  {!managedBot.primary && <button aria-label={`Hapus bot ${managedBot.username}`} className="icon-button" disabled={botActionBusy} onClick={() => manageBot('DELETE', managedBot.username)} type="button"><Icon name="trash" size={15} /></button>}
+                </div>
+              ))}
+              {!data?.bots?.length && <div className="empty-people">Bot belum dimulai.</div>}
+            </div>
+            <form className="add-bot-form" onSubmit={addBot}>
+              <input
+                autoComplete="off"
+                maxLength={16}
+                onChange={(event) => setBotUsername(event.target.value)}
+                placeholder="Nama akun offline"
+                value={botUsername}
+              />
+              <button className="send-button" disabled={botActionBusy || !botUsername.trim() || (data?.bots?.length || 0) >= (data?.maxBots || 3)} type="submit">
+                <Icon name="plus" size={15} /> Tambah
+              </button>
+            </form>
+            {botActionError && <p className="chat-error" role="alert">{botActionError}</p>}
+            <p className="small-note">Bot tambahan hanya hidup di instance runtime ini. Batas total: 3, termasuk bot utama.</p>
           </article>
         </section>
 
