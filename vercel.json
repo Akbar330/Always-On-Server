@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/status.js": {
+      "includeFiles": "settings.json"
+    }
+  }
+}

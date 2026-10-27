@@ -1,0 +1,24 @@
+{
+  "name": "minecraft-anti-afk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bot anti-AFK untuk server Minecraft yang Anda kelola atau izinkan.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js",
+    "dev": "vite",
+    "build": "vite build",
+    "check": "node --check src/config.js && node --check src/java-bot.js && node --check src/main.js && node --check api/status.js && vite build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "mineflayer": "^4.28.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}
